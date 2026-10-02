@@ -43,3 +43,5 @@ _ Connect frontend and backend
 _ Deploy and test
 _ Add more things to this list
 _ Name the project
+- Add alumni information feature to connect with jobseekers
+- Add job posting search feature

@@ -1,4 +1,5 @@
 import { Briefcase, Search } from "lucide-react";
+import BackendStatus from "@/components/BackendStatus";
 import RoleCard from "@/components/RoleCard";
 
 export default function LandingPage() {
@@ -29,6 +30,10 @@ export default function LandingPage() {
           title="I am Looking"
           description="Build a prioritized list of target companies and focus your job search."
         />
+      </div>
+
+      <div className="mt-12">
+        <BackendStatus />
       </div>
     </main>
   );

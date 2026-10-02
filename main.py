@@ -3,18 +3,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
 import requests
+import random
+import uuid
+from lamp.router import router as lamp_router
 
 # Define the expected JSON structure from the frontend
 class SeekerCreate(BaseModel):
     name: str
     email: str
-    zip_code: str
+    zip: str
     lat: float
     lng: float
     interest: str
     # Omit the resume upload for now to keep the initial merge simple
 
 app = FastAPI()
+app.include_router(lamp_router)
 
 @app.post("/api/seekers")
 def create_seeker(seeker: SeekerCreate):
@@ -50,8 +54,6 @@ class SeekerCreate(BaseModel):
     name: str
     email: str
     zip_code: str
-    lat: float
-    lng: float
     interest: str
 
 
@@ -63,47 +65,98 @@ def health_check():
 @app.get("/api/heatmap")
 def get_heatmap_data(interest: str = None):
     """
-    Fetches real seeker data from the Supabase 'seekers' table.
+    Fetches seeker coordinates from the profiles table.
+    Filters using the relational seeker_interests table if needed.
     """
-    # Ask your teammate what they named the table. Assuming "seekers" here.
-    query = supabase.table("seekers").select("*")
-    
-    # Apply database-level filtering if an interest is passed
     if interest:
-        query = query.eq("interest", interest)
+        # The !inner join forces it to only return profiles that have this exact interest
+        query = supabase.table("profiles").select("lat, lng, seeker_interests!inner(interest)").eq("role", "seeker").eq("seeker_interests.interest", interest)
+    else:
+        query = supabase.table("profiles").select("lat, lng").eq("role", "seeker")
         
     response = query.execute()
-    
-    return {
-        "count": len(response.data),
-        "data": response.data
-    }
+    return {"count": len(response.data), "data": response.data}
+
+@app.post("/api/seed-test-data")
+def seed_test_data(count: int = 500):
+    """
+    Generates UUIDs in Python so we can batch-insert into both tables instantly.
+    """
+    profiles_to_insert = []
+    interests_to_insert = []
+    job_interests = ["Software Engineering", "Cybersecurity", "Data Analytics"]
+
+    for i in range(count):
+        # Generate the UUID upfront so we can link the interest immediately
+        profile_id = str(uuid.uuid4())
+
+        profiles_to_insert.append({
+            "id": profile_id,
+            "role": "seeker",
+            "name": f"Fake Seeker {i}",
+            "email": f"fake{i}@example.com",
+            "zip": "00000",
+            "lat": round(random.uniform(25.0, 49.0), 4),
+            "lng": round(random.uniform(-125.0, -66.0), 4)
+        })
+
+        interests_to_insert.append({
+            "seeker_id": profile_id,
+            "interest": random.choice(job_interests)
+        })
+
+    # Execute batch inserts
+    supabase.table("profiles").insert(profiles_to_insert).execute()
+    supabase.table("seeker_interests").insert(interests_to_insert).execute()
+
+    return {"message": f"Successfully injected {count} fake profiles and interests!"}
+
+@app.delete("/api/clear-test-data")
+def clear_test_data():
+    """
+    Wipes the fake data. If your teammate set up Foreign Keys correctly,
+    deleting the profile will automatically delete their linked interests.
+    """
+    response = supabase.table("profiles").delete().eq("zip", "00000").execute()
+    return {"message": "Fake test data wiped!", "deleted_count": len(response.data)}
 
 @app.post("/api/seekers")
 def create_seeker(seeker: SeekerCreate):
     """
-    Receives frontend data, converts zip code to coordinates, and saves to Supabase.
+    Two-step insert: creates the profile, then links the interest.
     """
-    seeker_data = seeker.model_dump()
-    
-    # 1. Ping the free Zippopotam.us API to get coordinates
-    geo_url = f"https://api.zippopotam.us/us/{seeker.zip_code}"
+    # 1. Geocode the zip
+    lat, lng = 39.8283, -98.5795 # Default center US
+    geo_url = f"https://api.zippopotam.us/us/{seeker.zip}"
     geo_response = requests.get(geo_url)
-    
     if geo_response.status_code == 200:
         geo_json = geo_response.json()
-        # Extract lat/lng from the API response
-        seeker_data["lat"] = float(geo_json["places"][0]["latitude"])
-        seeker_data["lng"] = float(geo_json["places"][0]["longitude"])
-    else:
-        # Hackathon Fallback: If zip is fake/invalid, dump them in the middle of Kansas
-        seeker_data["lat"] = 39.8283
-        seeker_data["lng"] = -98.5795
+        lat = float(geo_json["places"][0]["latitude"])
+        lng = float(geo_json["places"][0]["longitude"])
 
-    # 2. Insert the complete record (now including lat/lng) into Supabase
-    response = supabase.table("seekers").insert(seeker_data).execute()
+    # 2. Insert into profiles table
+    profile_data = {
+        "role": "seeker",
+        "name": seeker.name,
+        "email": seeker.email,
+        "zip": seeker.zip,
+        "lat": lat,
+        "lng": lng
+        # id is omitted so Supabase auto-generates the UUID
+    }
+    profile_response = supabase.table("profiles").insert(profile_data).execute()
     
-    return {"message": "Seeker successfully created", "data": response.data}
+    # Extract the auto-generated UUID from the new profile
+    new_profile_id = profile_response.data[0]["id"]
+
+    # 3. Insert into the relational interests table
+    interest_data = {
+        "seeker_id": new_profile_id,
+        "interest": seeker.interest
+    }
+    supabase.table("seeker_interests").insert(interest_data).execute()
+
+    return {"message": "Seeker profile and interests successfully created!"}
 
 
 
