@@ -50,8 +50,10 @@ class SeekerCreate(BaseModel):
     name: str
     email: str
     zip_code: str
+    lat: float
+    lng: float
     interest: str
-    
+
 
 # 3. Endpoints
 @app.get("/")
