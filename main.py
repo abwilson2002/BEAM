@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 import requests
 import random
+import uuid
 from lamp.router import router as lamp_router
 
 # Define the expected JSON structure from the frontend
