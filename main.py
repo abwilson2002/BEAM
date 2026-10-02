@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
+import requests
 
 # Define the expected JSON structure from the frontend
 class SeekerCreate(BaseModel):
@@ -76,12 +77,28 @@ def get_heatmap_data(interest: str = None):
 @app.post("/api/seekers")
 def create_seeker(seeker: SeekerCreate):
     """
-    Inserts a new seeker into the Supabase database.
+    Receives frontend data, converts zip code to coordinates, and saves to Supabase.
     """
-    # Convert Pydantic model to dictionary
     seeker_data = seeker.model_dump()
     
-    # Insert into Supabase
+    # 1. Ping the free Zippopotam.us API to get coordinates
+    geo_url = f"https://api.zippopotam.us/us/{seeker.zip_code}"
+    geo_response = requests.get(geo_url)
+    
+    if geo_response.status_code == 200:
+        geo_json = geo_response.json()
+        # Extract lat/lng from the API response
+        seeker_data["lat"] = float(geo_json["places"][0]["latitude"])
+        seeker_data["lng"] = float(geo_json["places"][0]["longitude"])
+    else:
+        # Hackathon Fallback: If zip is fake/invalid, dump them in the middle of Kansas
+        seeker_data["lat"] = 39.8283
+        seeker_data["lng"] = -98.5795
+
+    # 2. Insert the complete record (now including lat/lng) into Supabase
     response = supabase.table("seekers").insert(seeker_data).execute()
     
     return {"message": "Seeker successfully created", "data": response.data}
+
+
+
