@@ -6,7 +6,7 @@ app = FastAPI()
 
 # CRITICAL for the hackathon: Allows the Next.js frontend to talk to this API
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleWare,
     allow_origins=["*"],  # Swap with Vercel frontend URL later if needed
     allow_credentials=True,
     allow_methods=["*"],
