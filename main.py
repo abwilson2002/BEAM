@@ -49,6 +49,7 @@ class SeekerCreate(BaseModel):
     email: str
     zip_code: str
     interest: str
+    
 
 # 3. Endpoints
 @app.get("/")
