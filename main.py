@@ -179,6 +179,7 @@ def create_event(event: EventCreate):
 
     # Build the database insert payload
     event_data = {
+        "id": str(uuid.uuid4()),
         "giver_id": event.giver_id,
         "title": event.title,
         "description": event.description,
