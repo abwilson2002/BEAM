@@ -11,14 +11,14 @@ Backend: Python
 Database: Supabase
 Deployment: Vercel
 
-## Strucutre
+## Structure
 
 hackathon-backend
 LICENSE
 main.py
 README.md
 
-## Hachathon Scheduler
+## Hackathon Scheduler
 ![alt text](image.png)
 
 Areas of intrest

@@ -1,34 +1,55 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleWare
-import random
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from supabase import create_client, Client
+
+# Define the expected JSON structure from the frontend
+class SeekerCreate(BaseModel):
+    name: str
+    email: str
+    zip_code: str
+    interest: str
+    # Omit the resume upload for now to keep the initial merge simple
 
 app = FastAPI()
 
+@app.post("/api/seekers")
+def create_seeker(seeker: SeekerCreate):
+    """
+    Person 1 will POST to this endpoint when a user fills out the registration form.
+    """
+    # For the 7-hour sprint demo, just print it to the terminal to verify it works
+    print(f"🔥 NEW SEEKER REGISTERED: {seeker.name} in {seeker.zip_code}")
+    
+    # Later, you will swap this print statement with a Supabase insert
+    return {"message": "Seeker successfully created", "data": seeker}
+
+
+
 # CRITICAL for the hackathon: Allows the Next.js frontend to talk to this API
 app.add_middleware(
-    CORSMiddleWare,
-    allow_origins=["*"],  # Swap with Vercel frontend URL later if needed
+    CORSMiddleware,
+    # Replace the Vercel URL with your actual deployed URL
+    allow_origins=[
+        "http://localhost:3000", 
+        "https://beam-beta-one.vercel.app/" 
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+SUPABASE_URL = "https://your-project-id.supabase.co" # Get from teammate
+SUPABASE_KEY = "ey-your-long-anon-key-string"        # Get from teammate
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 1. Fake In-Memory Database (No time for PostGIS right now)
-def generate_fake_seekers(count=500):
-    # Generates random coordinates loosely bounded to the US
-    return [
-        {
-            "id": i,
-            "lat": random.uniform(25.0, 49.0),
-            "lng": random.uniform(-125.0, -66.0),
-            "interest": random.choice(["Frontend", "Backend", "Data", "Design"])
-        }
-        for i in range(count)
-    ]
+# 2. Define expected POST data
+class SeekerCreate(BaseModel):
+    name: str
+    email: str
+    zip_code: str
+    interest: str
 
-fake_seekers = generate_fake_seekers()
-
-# 2. Endpoints
+# 3. Endpoints
 @app.get("/")
 def health_check():
     return {"status": "Backend is alive!"}
@@ -36,11 +57,31 @@ def health_check():
 @app.get("/api/heatmap")
 def get_heatmap_data(interest: str = None):
     """
-    Person 2 will call this endpoint to populate the Mapbox heatmap.
-    They can pass ?interest=Backend to filter the results.
+    Fetches real seeker data from the Supabase 'seekers' table.
     """
-    if interest:
-        filtered = [s for s in fake_seekers if s["interest"].lower() == interest.lower()]
-        return {"count": len(filtered), "data": filtered}
+    # Ask your teammate what they named the table. Assuming "seekers" here.
+    query = supabase.table("seekers").select("*")
     
-    return {"count": len(fake_seekers), "data": fake_seekers}
+    # Apply database-level filtering if an interest is passed
+    if interest:
+        query = query.eq("interest", interest)
+        
+    response = query.execute()
+    
+    return {
+        "count": len(response.data),
+        "data": response.data
+    }
+
+@app.post("/api/seekers")
+def create_seeker(seeker: SeekerCreate):
+    """
+    Inserts a new seeker into the Supabase database.
+    """
+    # Convert Pydantic model to dictionary
+    seeker_data = seeker.model_dump()
+    
+    # Insert into Supabase
+    response = supabase.table("seekers").insert(seeker_data).execute()
+    
+    return {"message": "Seeker successfully created", "data": response.data}
