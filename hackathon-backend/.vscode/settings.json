@@ -1,0 +1,6 @@
+{
+    "python.linting.mypyEnabled": false,
+    "python.linting.ruffEnabled": false,
+    "ruff.enable": false,
+    "mypy-type-checker.importStrategy": "none"
+}
