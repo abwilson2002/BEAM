@@ -9,6 +9,8 @@ class SeekerCreate(BaseModel):
     name: str
     email: str
     zip_code: str
+    lat: float
+    lng: float
     interest: str
     # Omit the resume upload for now to keep the initial merge simple
 
