@@ -28,10 +28,10 @@ export default function HiringSetupPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const dreamList = parseCommaList(dreamCompanies);
+    const dreamList = parseCommaList(dreamEmployees);
     if (dreamList.length === 0 || dreamList.length > MAX_DREAM_COMPANIES) {
       setError(
-        `Enter between 1 and ${MAX_DREAM_COMPANIES} dream companies, separated by commas.`,
+        `Enter between 1 and ${MAX_DREAM_COMPANIES} dream candidates, separated by commas.`,
       );
       return;
     }
@@ -40,8 +40,8 @@ export default function HiringSetupPage() {
     setIsLoading(true);
     try {
       await generateCompaniesList({
-        university: university.trim(),
-        targetRole: targetRole.trim(),
+        university: companyName.trim(),
+        targetRole: hiringRoles.trim(),
         dreamCompanies: dreamList,
       });
       router.push("/looking/dashboard");

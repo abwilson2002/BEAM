@@ -36,12 +36,17 @@ opt in for announcements
 ## TODO
 
 X Brainstorm
-_ Set up frontend
-_ Set up Supabase
+X Set up frontend
+X Set up Supabase
 _ Set up authentication
-_ Connect frontend and backend
-_ Deploy and test
+X Connect frontend and backend
+X Deploy and test
 _ Add more things to this list
 _ Name the project
 - Add alumni information feature to connect with jobseekers
 - Add job posting search feature
+_ Abilites to sort LAMP
+_ Be able to host it (buy domain)
+_ Add Resumes for seeker
+_ Add radius
+_ Find and network with alumni
