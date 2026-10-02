@@ -10,10 +10,17 @@ import type { Company, GenerateCompaniesParams, Score } from "@/types";
  * helpers below.
  */
 
+// The backend runs several web-search model calls, so this is much slower than a normal request.
+const GENERATE_TIMEOUT_MS = 240_000;
+
 export async function generateCompaniesList(
   params: GenerateCompaniesParams,
 ): Promise<Company[]> {
-  const companies = await apiPost<Company[]>("/api/lamp/generate", params);
+  const companies = await apiPost<Company[]>(
+    "/api/lamp/generate",
+    params,
+    GENERATE_TIMEOUT_MS,
+  );
   saveMockStore(companies);
   return companies;
 }

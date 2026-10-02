@@ -6,6 +6,7 @@ import requests
 import random
 import uuid
 from lamp.router import router as lamp_router
+from events.router import create_events_router
 
 # Define the expected JSON structure from the frontend
 class SeekerCreate(BaseModel):
@@ -39,6 +40,7 @@ app.add_middleware(
 SUPABASE_URL = "https://bneqayyaghpcuzpwnqrm.supabase.co" # Get from teammate
 SUPABASE_KEY = "sb_publishable_uyZrw7xruDn0ieZjTXMaiw_fppY4o_Q"        # Get from teammate
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+app.include_router(create_events_router(supabase))
 
 # 2. Define expected POST data
 class SeekerCreate(BaseModel):

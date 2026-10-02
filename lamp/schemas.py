@@ -1,15 +1,10 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
+from pydantic import BaseModel, Field
+
+from shared.camel import CamelModel
 
 Score = Literal[1, 2, 3]
-
-
-class CamelModel(BaseModel):
-    """API models speak camelCase to match the TypeScript types in the frontend."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class GenerateRequest(CamelModel):

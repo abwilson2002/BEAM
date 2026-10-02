@@ -24,3 +24,56 @@ export interface GenerateCompaniesParams {
   targetRole: string;
   dreamCompanies: string[];
 }
+
+/** A seeker's location, as returned by the backend's GET /api/heatmap. */
+export interface HeatmapPoint {
+  lat: number;
+  lng: number;
+}
+
+export const JOB_INTERESTS = [
+  "Software Engineering",
+  "Cybersecurity",
+  "Data Analytics",
+] as const;
+export type JobInterest = (typeof JOB_INTERESTS)[number];
+
+export const EVENT_TYPES = [
+  "hackathon",
+  "info_session",
+  "career_fair",
+  "workshop",
+  "networking",
+  "other",
+] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+
+export interface CareerEvent {
+  id: string;
+  title: string;
+  eventType: EventType;
+  organizer: string;
+  description: string;
+  /** ISO 8601 timestamp. */
+  startsAt: string;
+  venue: string;
+  zip: string;
+  lat: number;
+  lng: number;
+}
+
+export interface NearbyEvent extends CareerEvent {
+  distanceMiles: number;
+}
+
+/** Input collected by the "create event" form. */
+export interface CreateEventParams {
+  title: string;
+  eventType: EventType;
+  organizer: string;
+  description: string;
+  /** ISO 8601 timestamp, including the timezone. */
+  startsAt: string;
+  venue: string;
+  zip: string;
+}
