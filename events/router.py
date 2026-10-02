@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
@@ -30,6 +31,7 @@ def create_events_router(supabase: Client) -> APIRouter:
     def create_event(request: CreateEventRequest):
         lat, lng = _geocode_or_http_error(request.zip)
         row = {
+            "id": str(uuid.uuid4()),  # generated here so it works whether or not the column has a default
             "title": request.title,
             "event_type": request.event_type,
             "organizer": request.organizer,
