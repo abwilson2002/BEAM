@@ -77,3 +77,10 @@ export interface CreateEventParams {
   venue: string;
   zip: string;
 }
+
+/** Input collected by the /hiring/setup form. */
+export interface GenerateCandidatesParams {
+  companyName: string;
+  hiringRoles: string[];
+  dreamCandidates: string[];
+}

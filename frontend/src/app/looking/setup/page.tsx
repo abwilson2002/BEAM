@@ -5,16 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { INPUT_CLASSES, PRIMARY_BUTTON_CLASSES } from "@/lib/styles";
+import { parseCommaList } from "@/lib/text";
 import { generateCompaniesList } from "@/services/companyService";
 
 const MAX_DREAM_COMPANIES = 3;
-
-function parseCommaList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
 
 export default function LookingSetupPage() {
   const router = useRouter();

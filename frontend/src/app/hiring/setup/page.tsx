@@ -4,34 +4,31 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import { generateCompaniesList } from "@/services/companyService";
+import { INPUT_CLASSES, PRIMARY_BUTTON_CLASSES } from "@/lib/styles";
+import { parseCommaList } from "@/lib/text";
+import { generateCandidatesList } from "@/services/candidateService";
 
-const MAX_DREAM_COMPANIES = 3;
-
-const INPUT_CLASSES =
-  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-2 focus:outline-indigo-500/30 disabled:bg-slate-100";
-
-function parseCommaList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+const MAX_DREAM_CANDIDATES = 3;
 
 export default function HiringSetupPage() {
   const router = useRouter();
   const [companyName, setCompanyName] = useState("");
   const [hiringRoles, setHiringRoles] = useState("");
-  const [dreamEmployees, setDreamEmployees] = useState("");
+  const [dreamCandidates, setDreamCandidates] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const dreamList = parseCommaList(dreamCompanies);
-    if (dreamList.length === 0 || dreamList.length > MAX_DREAM_COMPANIES) {
+    const rolesList = parseCommaList(hiringRoles);
+    const candidatesList = parseCommaList(dreamCandidates);
+    if (rolesList.length === 0) {
+      setError("Enter at least one role you are hiring for.");
+      return;
+    }
+    if (candidatesList.length === 0 || candidatesList.length > MAX_DREAM_CANDIDATES) {
       setError(
-        `Enter between 1 and ${MAX_DREAM_COMPANIES} dream companies, separated by commas.`,
+        `Enter between 1 and ${MAX_DREAM_CANDIDATES} dream candidates, separated by commas.`,
       );
       return;
     }
@@ -39,14 +36,14 @@ export default function HiringSetupPage() {
     setError(null);
     setIsLoading(true);
     try {
-      await generateCompaniesList({
-        university: university.trim(),
-        targetRole: targetRole.trim(),
-        dreamCompanies: dreamList,
+      await generateCandidatesList({
+        companyName: companyName.trim(),
+        hiringRoles: rolesList,
+        dreamCandidates: candidatesList,
       });
-      router.push("/looking/dashboard");
+      router.push("/hiring");
     } catch (err) {
-      console.error("Failed to generate the company list", err);
+      console.error("Failed to generate the candidate list", err);
       setError("Something went wrong generating your list. Please try again.");
       setIsLoading(false);
     }
@@ -55,20 +52,19 @@ export default function HiringSetupPage() {
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
       <Link
-        href="/"
+        href="/hiring"
         className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900"
       >
         <ArrowLeft className="h-4 w-4" />
         Back
       </Link>
 
-      <h1>
+      <h1 className="text-3xl font-semibold tracking-tight">
         Build your hiring list
       </h1>
-
-      <p>
-        Tell us about your hiring needs and we&apos;ll generate 40 candidates
-        to prioritize.
+      <p className="mt-2 text-slate-500">
+        Tell us about your hiring needs and we&apos;ll generate 40 candidates to
+        prioritize.
       </p>
 
       <form
@@ -84,7 +80,7 @@ export default function HiringSetupPage() {
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             disabled={isLoading}
-            placeholder="Brigham Young University"
+            placeholder="Acme Inc."
             className={INPUT_CLASSES}
           />
         </label>
@@ -101,6 +97,9 @@ export default function HiringSetupPage() {
             placeholder="Full-Stack Engineer, Product Manager"
             className={INPUT_CLASSES}
           />
+          <span className="block text-xs text-slate-400">
+            Separate roles with commas.
+          </span>
         </label>
 
         <label className="block space-y-1.5">
@@ -109,14 +108,14 @@ export default function HiringSetupPage() {
           </span>
           <input
             required
-            value={dreamEmployees}
-            onChange={(e) => setDreamEmployees(e.target.value)}
+            value={dreamCandidates}
+            onChange={(e) => setDreamCandidates(e.target.value)}
             disabled={isLoading}
             placeholder="Jane Smith, John Doe, Alex Johnson"
             className={INPUT_CLASSES}
           />
           <span className="block text-xs text-slate-400">
-            Separate employees with commas.
+            Separate candidates with commas.
           </span>
         </label>
 
@@ -129,7 +128,7 @@ export default function HiringSetupPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400"
+          className={PRIMARY_BUTTON_CLASSES}
         >
           {isLoading ? (
             <>
