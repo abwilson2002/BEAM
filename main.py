@@ -211,4 +211,9 @@ def get_local_events(zip: str):
     }
 
 
+# Here is how to run the backend tester to individually trigger each of the pieces
+# make sure the venv environment is running (./hackathon-backend/venv/Scripts/Activate.ps1)
+# Run the command: uvicorn main:app --reload
+# pip install any missing repositories
+# Go to localhost:8000/docs
 
