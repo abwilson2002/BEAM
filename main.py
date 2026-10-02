@@ -41,7 +41,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-SUPABASE_URL = "https://supabase.com/dashboard/project/bneqayyaghpcuzpwnqrm" # Get from teammate
+SUPABASE_URL = "https://bneqayyaghpcuzpwnqrm.supabase.co" # Get from teammate
 SUPABASE_KEY = "sb_publishable_uyZrw7xruDn0ieZjTXMaiw_fppY4o_Q"        # Get from teammate
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -50,7 +50,10 @@ class SeekerCreate(BaseModel):
     name: str
     email: str
     zip_code: str
+    lat: float
+    lng: float
     interest: str
+
 
 # 3. Endpoints
 @app.get("/")
