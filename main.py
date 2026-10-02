@@ -47,6 +47,12 @@ class SeekerCreate(BaseModel):
     zip_code: str
     interest: str
 
+class EventCreate(BaseModel):
+    giver_id: str
+    title: str
+    description: str
+    zip: str
+    starts_at: str # Format: "2026-10-15T18:00:00Z"
 
 # 3. Endpoints
 @app.get("/")
@@ -150,7 +156,56 @@ def clear_test_data():
     response = supabase.table("profiles").delete().eq("zip", "00000").execute()
     return {"message": "Fake test data wiped!", "deleted_count": len(response.data)}
 
+@app.post("/api/events")
+def create_event(event: EventCreate):
+    """
+    Creates an event, automatically converts the zip into Mapbox coordinates, 
+    and generates a readable city/state location name.
+    """
+    lat, lng = 39.8283, -98.5795 # Default fallback
+    location_name = f"Zip Code: {event.zip}"
+    
+    # Ping Zippopotam to get the exact location data
+    geo_url = f"https://api.zippopotam.us/us/{event.zip}"
+    geo_response = requests.get(geo_url)
+    
+    if geo_response.status_code == 200:
+        geo_json = geo_response.json()
+        lat = float(geo_json["places"][0]["latitude"])
+        lng = float(geo_json["places"][0]["longitude"])
+        city = geo_json["places"][0]["place name"]
+        state = geo_json["places"][0]["state abbreviation"]
+        location_name = f"{city}, {state}"
 
+    # Build the database insert payload
+    event_data = {
+        "giver_id": event.giver_id,
+        "title": event.title,
+        "description": event.description,
+        "location_name": location_name,
+        "lat": lat,
+        "lng": lng,
+        "starts_at": event.starts_at,
+        "zip": event.zip 
+    }
+    
+    response = supabase.table("events").insert(event_data).execute()
+    return {"message": "Event successfully created!", "data": response.data}
+
+
+@app.get("/api/events")
+def get_local_events(zip: str):
+    """
+    Allows a Seeker to fetch all events happening in a specific zip code.
+    Example frontend request: fetch('/api/events?zip=84604')
+    """
+    # .eq("zip", zip) ensures we only return events matching the exact zip code
+    response = supabase.table("events").select("*").eq("zip", zip).execute()
+    
+    return {
+        "count": len(response.data),
+        "data": response.data
+    }
 
 
 
