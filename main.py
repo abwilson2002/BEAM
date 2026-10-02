@@ -20,16 +20,7 @@ class SeekerCreate(BaseModel):
 app = FastAPI()
 app.include_router(lamp_router)
 
-@app.post("/api/seekers")
-def create_seeker(seeker: SeekerCreate):
-    """
-    Person 1 will POST to this endpoint when a user fills out the registration form.
-    """
-    # For the 7-hour sprint demo, just print it to the terminal to verify it works
-    print(f"🔥 NEW SEEKER REGISTERED: {seeker.name} in {seeker.zip_code}")
-    
-    # Later, you will swap this print statement with a Supabase insert
-    return {"message": "Seeker successfully created", "data": seeker}
+
 
 
 
@@ -61,6 +52,45 @@ class SeekerCreate(BaseModel):
 @app.get("/")
 def health_check():
     return {"status": "Backend is alive!"}
+
+@app.post("/api/seekers")
+def create_seeker(seeker: SeekerCreate):
+    """
+    Two-step insert: creates the profile, then links the interest.
+    """
+    # 1. Geocode the zip
+    lat, lng = 39.8283, -98.5795 # Default center US
+    geo_url = f"https://api.zippopotam.us/us/{seeker.zip}"
+    geo_response = requests.get(geo_url)
+    if geo_response.status_code == 200:
+        geo_json = geo_response.json()
+        lat = float(geo_json["places"][0]["latitude"])
+        lng = float(geo_json["places"][0]["longitude"])
+
+    # 2. Insert into profiles table
+    profile_data = {
+        "role": "seeker",
+        "name": seeker.name,
+        "email": seeker.email,
+        "zip": seeker.zip,
+        "lat": lat,
+        "lng": lng
+        # id is omitted so Supabase auto-generates the UUID
+    }
+    profile_response = supabase.table("profiles").insert(profile_data).execute()
+    
+    # Extract the auto-generated UUID from the new profile
+    new_profile_id = profile_response.data[0]["id"]
+
+    # 3. Insert into the relational interests table
+    interest_data = {
+        "seeker_id": new_profile_id,
+        "interest": seeker.interest
+    }
+    supabase.table("seeker_interests").insert(interest_data).execute()
+
+    return {"message": "Seeker profile and interests successfully created!"}
+
 
 @app.get("/api/heatmap")
 def get_heatmap_data(interest: str = None):
@@ -120,43 +150,7 @@ def clear_test_data():
     response = supabase.table("profiles").delete().eq("zip", "00000").execute()
     return {"message": "Fake test data wiped!", "deleted_count": len(response.data)}
 
-@app.post("/api/seekers")
-def create_seeker(seeker: SeekerCreate):
-    """
-    Two-step insert: creates the profile, then links the interest.
-    """
-    # 1. Geocode the zip
-    lat, lng = 39.8283, -98.5795 # Default center US
-    geo_url = f"https://api.zippopotam.us/us/{seeker.zip}"
-    geo_response = requests.get(geo_url)
-    if geo_response.status_code == 200:
-        geo_json = geo_response.json()
-        lat = float(geo_json["places"][0]["latitude"])
-        lng = float(geo_json["places"][0]["longitude"])
 
-    # 2. Insert into profiles table
-    profile_data = {
-        "role": "seeker",
-        "name": seeker.name,
-        "email": seeker.email,
-        "zip": seeker.zip,
-        "lat": lat,
-        "lng": lng
-        # id is omitted so Supabase auto-generates the UUID
-    }
-    profile_response = supabase.table("profiles").insert(profile_data).execute()
-    
-    # Extract the auto-generated UUID from the new profile
-    new_profile_id = profile_response.data[0]["id"]
-
-    # 3. Insert into the relational interests table
-    interest_data = {
-        "seeker_id": new_profile_id,
-        "interest": seeker.interest
-    }
-    supabase.table("seeker_interests").insert(interest_data).execute()
-
-    return {"message": "Seeker profile and interests successfully created!"}
 
 
 
