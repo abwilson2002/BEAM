@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Construction } from "lucide-react";
+import Heatmap from "@/components/Heatmap";
 
 export default function HiringPage() {
   return (
