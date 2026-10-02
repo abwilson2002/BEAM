@@ -25,19 +25,24 @@ alter table public.events add constraint events_event_type_check check (
   event_type in ('hackathon', 'info_session', 'career_fair', 'workshop', 'networking', 'other')
 );
 
--- 3. The frontend has no login, so it sends no giver_id / location_name.
---    Let those older columns stay empty if they exist.
+-- 3. The frontend has no login, so it cannot send older columns like giver_id or
+--    location_name. Let every column it does not know about stay empty.
 do $$
 declare
-  old_column text;
+  legacy_column text;
 begin
-  foreach old_column in array array['giver_id', 'location_name'] loop
-    if exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public' and table_name = 'events' and column_name = old_column
-    ) then
-      execute format('alter table public.events alter column %I drop not null', old_column);
-    end if;
+  for legacy_column in
+    select column_name
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'events'
+      and is_nullable = 'NO'
+      and column_name not in (
+        'id', 'title', 'description', 'starts_at', 'zip', 'lat', 'lng',
+        'event_type', 'organizer', 'venue', 'created_at'
+      )
+  loop
+    execute format('alter table public.events alter column %I drop not null', legacy_column);
   end loop;
 end $$;
 

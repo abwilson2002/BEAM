@@ -84,9 +84,13 @@ def _geocode_or_http_error(zip_code: str) -> tuple[float, float]:
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 
+# PostgREST / Postgres codes meaning a table or column is missing.
+SCHEMA_ERROR_CODES = {"PGRST204", "PGRST205", "42P01", "42703"}
+
+
 def _database_error(error: APIError) -> HTTPException:
     logger.exception("Supabase request failed")
-    return HTTPException(
-        status_code=502,
-        detail=f"Database error: {error.message} (does the `events` table exist? see supabase/events.sql)",
-    )
+    detail = f"Database error: {error.message}"
+    if error.code in SCHEMA_ERROR_CODES:
+        detail += " (run supabase/events.sql in the Supabase SQL editor)"
+    return HTTPException(status_code=502, detail=detail)
