@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
 import requests
+from lamp.router import router as lamp_router
 
 # Define the expected JSON structure from the frontend
 class SeekerCreate(BaseModel):
@@ -15,6 +16,7 @@ class SeekerCreate(BaseModel):
     # Omit the resume upload for now to keep the initial merge simple
 
 app = FastAPI()
+app.include_router(lamp_router)
 
 @app.post("/api/seekers")
 def create_seeker(seeker: SeekerCreate):

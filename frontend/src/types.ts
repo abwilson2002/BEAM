@@ -13,6 +13,11 @@ export interface Company {
   motivationScore: Score;
 }
 
+/** Response of the backend's GET / endpoint. */
+export interface HealthResponse {
+  status: string;
+}
+
 /** Input collected by the /looking/setup form. */
 export interface GenerateCompaniesParams {
   university: string;

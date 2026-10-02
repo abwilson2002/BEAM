@@ -47,7 +47,11 @@ export default function LookingSetupPage() {
       router.push("/looking/dashboard");
     } catch (err) {
       console.error("Failed to generate the company list", err);
-      setError("Something went wrong generating your list. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong generating your list. Please try again.",
+      );
       setIsLoading(false);
     }
   }
@@ -142,6 +146,12 @@ export default function LookingSetupPage() {
             </>
           )}
         </button>
+
+        {isLoading && (
+          <p className="text-center text-xs text-slate-400">
+            Searching LinkedIn for alumni and open roles. This can take a minute.
+          </p>
+        )}
       </form>
     </main>
   );

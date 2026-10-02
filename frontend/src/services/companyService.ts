@@ -1,25 +1,21 @@
-import {
-  createMockCompany,
-  MOCK_COMPANIES,
-} from "@/api/mockData";
+import { apiPost } from "@/api/client";
 import type { Company, GenerateCompaniesParams, Score } from "@/types";
 
 /**
  * Company data access for the "Looking" flow.
  *
- * Every function here is the single seam to the backend: to go live, replace
- * each body with a `fetch` to the Python API (keep the signatures) and delete
- * the mock helpers below.
+ * `generateCompaniesList` talks to the FastAPI backend. `getCompanies` and
+ * `updateMotivationScore` are still mocked (sessionStorage) until the backend
+ * can persist lists: replace their bodies with API calls and delete the mock
+ * helpers below.
  */
 
-export function generateCompaniesList(
+export async function generateCompaniesList(
   params: GenerateCompaniesParams,
 ): Promise<Company[]> {
-  return simulateLatency(() => {
-    const companies = buildMockList(params);
-    saveMockStore(companies);
-    return companies;
-  }, 2500);
+  const companies = await apiPost<Company[]>("/api/lamp/generate", params);
+  saveMockStore(companies);
+  return companies;
 }
 
 export function getCompanies(): Promise<Company[]> {
@@ -43,11 +39,9 @@ export function updateMotivationScore(
 }
 
 // ---------------------------------------------------------------------------
-// Mock backend — remove when the real API is connected.
+// Mock persistence — remove when the backend stores the lists.
 // ---------------------------------------------------------------------------
 
-const LIST_SIZE = 40;
-const DREAM_MOTIVATION: Score = 3;
 const STORE_KEY = "lamp-companies";
 
 function simulateLatency<T>(work: () => T, delayMs: number): Promise<T> {
@@ -60,33 +54,6 @@ function simulateLatency<T>(work: () => T, delayMs: number): Promise<T> {
       }
     }, delayMs);
   });
-}
-
-/** Starts from the mock list, rating the candidate's dream companies highest. */
-function buildMockList({ dreamCompanies }: GenerateCompaniesParams): Company[] {
-  const dreamNames = new Set(dreamCompanies.map(normalizeName));
-  const knownNames = new Set(MOCK_COMPANIES.map((c) => normalizeName(c.name)));
-
-  const matched = MOCK_COMPANIES.filter((c) =>
-    dreamNames.has(normalizeName(c.name)),
-  ).map((c) => ({ ...c, motivationScore: DREAM_MOTIVATION }));
-
-  const unknownDreams = dreamCompanies
-    .filter((name) => !knownNames.has(normalizeName(name)))
-    .map((name, index) => ({
-      ...createMockCompany(`dream-${index + 1}`, name, "Dream Target"),
-      motivationScore: DREAM_MOTIVATION,
-    }));
-
-  const others = MOCK_COMPANIES.filter(
-    (c) => !dreamNames.has(normalizeName(c.name)),
-  ).slice(0, LIST_SIZE - matched.length - unknownDreams.length);
-
-  return [...unknownDreams, ...matched, ...others].map((c) => ({ ...c }));
-}
-
-function normalizeName(name: string): string {
-  return name.trim().toLowerCase();
 }
 
 // sessionStorage stands in for the database so a page refresh keeps the list.
